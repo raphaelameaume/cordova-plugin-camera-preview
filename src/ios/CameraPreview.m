@@ -196,12 +196,15 @@
           if (error) {
             NSLog(@"%@", error);
           } else {
-            NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:sampleBuffer];
-            UIImage *capturedImage  = [[UIImage alloc] initWithData:imageData];
+            [self.cameraRenderController.renderLock lock];
+            CIImage *previewCImage = self.cameraRenderController.latestFrame;
+            CGImageRef previewImage = [self.cameraRenderController.ciContext createCGImage:previewCImage fromRect:previewCImage.extent];
+              
+            UIImage* uiImage = [UIImage imageWithCGImage:previewImage];
+            CGImageRelease(previewImage);
+            [self.cameraRenderController.renderLock unlock];
 
-            capturedImage = [self imageCorrectedForCaptureOrientation:capturedImage];
-
-            NSString *originalPicture = [NSString stringWithFormat:@"data:image/jpeg;base64,%@", [UIImageJPEGRepresentation(capturedImage, 0.75f) base64EncodedStringWithOptions:0]];
+            NSString *originalPicture = [NSString stringWithFormat:@"data:image/jpeg;base64,%@", [UIImageJPEGRepresentation(uiImage, 0.75f) base64EncodedStringWithOptions:0]];
 
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:originalPicture];
             [pluginResult setKeepCallbackAsBool:true];
